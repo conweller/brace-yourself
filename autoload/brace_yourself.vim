@@ -39,7 +39,7 @@ function! brace_yourself#do_we_expand(brac1,brac2)
 	let [_b, line, col, _o] = getpos('.')
 	let curline = getline(line)
 	return curline[col-1-strlen(a:brac1):col-2]==a:brac1 &&
-				\curline[col-1:col-1+strlen(a:brac2)]==a:brac2
+				\curline[col-1:col-1+strlen(a:brac2)-1]==a:brac2
 endfunction
 
 
@@ -75,7 +75,7 @@ function! brace_yourself#do_we_unexpand(brac1, brac2)
 
 	if len(split(prevline)) >0 && a:brac1 == split(prevline)[-1][-strlen(a:brac1):]
 		if len(split(nextline))>0
-			return split(nextline)[0][0:strlen(a:brac2)]==a:brac2
+			return split(nextline)[0][0:strlen(a:brac2)-1]==a:brac2
 		endif
 	endif
 	return 0
