@@ -1,0 +1,2 @@
+# Bracket Matching Plugin
+---
