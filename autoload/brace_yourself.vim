@@ -1,156 +1,118 @@
-function! brace_yourself#match_it(brac1, brac2)
-	let [_b, line, col, _o] = getpos('.')
-
-	let curline = getline(line)
-
-	let shift_dir = "\<left>"
-	let append_string = a:brac1 . a:brac2
-	if (a:brac1 == a:brac2)
-		if (curline[col-1]==a:brac2)
-			let shift_dir = "\<right>"
-			let append_string = ""
-		endif
-	endif
-
-	let shift = ""
-	for i in range(0, strlen(a:brac2)-1)
-		let shift = shift . shift_dir
-	endfor
-	return append_string . shift
+let g:brace_dot = 1
+function! s:preserve_undo()
+    if g:brace_dot
+        return "\<C-G>U"
+    else
+        return ''
+    return
 endfunction
 
 
-function! brace_yourself#move_right(brac1, brac2)
-	let [_b, line, col, _o] = getpos('.')
-	let curline = getline(line)
+function! brace_yourself#close_bracket(left, right)
+    let [_, l:column] =  nvim_win_get_cursor(0)
+    let l:next = l:column
 
-	if (curline[col-1]==a:brac2)
-		let shift = ""
-		for i in range(0, strlen(a:brac2)-1)
-			let shift = shift . "\<right>"
-		endfor
-		return shift
-	else
-		return a:brac2
-	endif
-endfunction
+    let l:line = getline('.')
 
-function! brace_yourself#do_we_expand(brac1,brac2)
-	let [_b, line, col, _o] = getpos('.')
-	let curline = getline(line)
-	return curline[col-1-strlen(a:brac1):col-2]==a:brac1 &&
-				\curline[col-1:col-1+strlen(a:brac2)-1]==a:brac2
+    if l:line[l:next] =~ '[^a-zA-Z0-9\d]' || l:line[l:next] == ''
+        call nvim_feedkeys(a:left.a:right.s:preserve_undo()."\<left>", 'n', v:false)
+    else
+        call nvim_feedkeys(a:left, 'n', v:false)
+    endif
 endfunction
 
 
-function! brace_yourself#do_we_expand_all(arrays)
-	let [_b, line, col, _o] = getpos('.')
-	let curline = getline(line)
-	let expand = 0
-	for array in a:arrays
-		if brace_yourself#do_we_expand(array[0], array[1])
-			let brackets = array
-			let expand = 1
-			break
-		endif
-	endfor
+function! brace_yourself#close_bracket_quote(bracket)
+    let [_, l:column] =  nvim_win_get_cursor(0)
+    let l:next = l:column
+    let l:prev = l:column-1
 
-	if expand
-		return "\<c-j>\<up>\<c-o>A\<c-j>"
-	else
-		return "\<c-j>"
-	endif
+    let l:line = getline('.')
+
+    if l:line[l:next] == a:bracket
+        call nvim_feedkeys(s:preserve_undo()."\<right>", "n", v:false)
+    else
+        if (l:prev == -1 || l:line[l:prev] =~ '[^a-zA-Z0-9\d]')
+                    \ &&
+                    \ (l:line[l:next] =~ '[^a-zA-Z0-9\d]' || l:line[l:next] == '')
+                    \ && l:line[l:prev] != a:bracket
+            call nvim_feedkeys(a:bracket.a:bracket.s:preserve_undo()."\<left>", 'n', v:false)
+        else
+            call nvim_feedkeys(a:bracket, "n", v:false)
+        endif
+    end
+endfunction
+
+function! brace_yourself#skip_closing(left, right)
+    let [_, l:column] =  nvim_win_get_cursor(0)
+    let l:next = l:column
+
+    let l:line = getline('.')
+
+    if l:line[l:next] == a:right
+        call nvim_feedkeys(s:preserve_undo()."\<right>", "n", v:false)
+    else
+        call nvim_feedkeys(a:right, 'n', v:false)
+    end
+endfunction
+
+function! brace_yourself#delete_bracket(left, right)
+    let [l:row, l:column] =  nvim_win_get_cursor(0)
+    let l:next = l:column
+    let l:prev = l:column-1
+
+    let l:prev_line = getline(l:row-1)
+    let l:line = getline('.')
+    let l:next_line = getline(l:row+1)
+
+    if l:line[l:prev] == a:left && l:line[l:next] == a:right
+        call nvim_feedkeys("\<delete>\<bs>", "n", v:false)
+        return v:true
+    elseif l:line =~ '^\s*$' && l:prev_line =~ a:left.'$' && l:next_line =~ '^\s*'.a:right
+        let l:new_next_line = l:next_line[match(l:next_line, a:right):]
+        call setline(l:row+1, l:new_next_line)
+        call nvim_feedkeys("\<c-t>\<c-u>\<down>\<bs>\<bs>", "n", v:false)
+        return v:true
+    else
+        return v:false
+    end
 endfunction
 
 
-function! brace_yourself#do_we_unexpand(brac1, brac2)
-	let [_b, line, col, _o] = getpos('.')
-	let prevline = getline(line-1)
-	let nextline = getline(line+1)
-	let curline = getline(line)
+function! brace_yourself#expand(left, right)
+    let [_, l:column] =  nvim_win_get_cursor(0)
+    let l:next = l:column
+    let l:prev = l:column-1
 
-	if len(split(curline)) != 0
-		return 0
-	endif
+    let l:line = getline('.')
 
-	if len(split(prevline)) >0 && a:brac1 == split(prevline)[-1][-strlen(a:brac1):]
-		if len(split(nextline))>0
-			return split(nextline)[0][0:strlen(a:brac2)-1]==a:brac2
-		endif
-	endif
-	return 0
+    if l:line[l:prev] == a:left && l:line[l:next] == a:right
+        " call nvim_feedkeys("\<c-j>\<c-g>k\<c-j>\<c-t>\<c-u>", "n")
+        " call nvim_feedkeys("\<c-j>\<c-g>k\<c-j>", "n")
+        " call nvim_feedkeys("\<c-j>\<Up>\<end>\<c-j>", "n")
+        call nvim_feedkeys("\<c-j>\<m-O>", "n", v:false)
+        return v:true
+    else
+        return v:false
+    end
 endfunction
 
-function! brace_yourself#do_we_delete(brac1, brac2)
-	let [_b, line, col, _o] = getpos('.')
-	let curline = getline(line)
-	let prevline = getline(line-1)
-	let nextline = getline(line+1)
-	let match = 1
-	for i in range(0,strlen(a:brac1)-1)
-		if curline[col-2-i] != a:brac1[strlen(a:brac1)-1-i]
-			let match = 0
-		endif
-	endfor
-	for i in range(0,strlen(a:brac2)-1)
-		if curline[col-1+i] != a:brac2[i]
-			let match = 0
-		endif
-	endfor
-	return match
+function! brace_yourself#expand_all(bracket_pairs)
+    for [l:left, l:right] in a:bracket_pairs
+        if brace_yourself#expand(left, right)
+            return v:true
+        end
+    endfor
+    call nvim_feedkeys("\<c-j>", 'n', v:false)
+    return v:false
 endfunction
 
-function! brace_yourself#do_we_delete_all(arrays)
-	let delete_both = 0
-	for array in a:arrays
-		if brace_yourself#do_we_delete(array[0], array[1])
-			let brackets = array
-			let delete_both = 1
-			break
-		elseif brace_yourself#do_we_unexpand(array[0], array[1])
-			return "\<c-o>\"_dd\<c-o>I \<left>\<c-o>vk$\"_d"
-		endif
-	endfor
-
-	if delete_both == 1
-		let delete_input = ""
-		for i in range(0, strlen(brackets[1])-1)
-			let delete_input = delete_input . "\<Delete>"
-		endfor
-		for i in range(0, strlen(brackets[0])-1)
-			let delete_input = delete_input . "\<C-h>"
-		endfor
-		return delete_input
-	else
-		return "\<C-h>"
-	endif
-endfunction
-
-function! brace_yourself#set_maps(brackets)
-	inoremap <silent><buffer><expr> <Backspace> brace_yourself#do_we_delete_all(brackets)
-	inoremap <silent><buffer><expr> <CR> brace_yourself#do_we_expand_all(brackets)
-	for i in a:brackets
-		if (len(i) == 3)
-			let trigger = i[2]
-		else
-			let trigger = i[0]
-		endif
-		if (i[0] =~ "\"" || i[1] =~ "\"")
-			execute "inoremap <silent><buffer><expr> "
-						\ . trigger .
-						\" brace_yourself#match_it('".
-						\i[0] . "','".  i[1] . "')"
-		else
-			execute "inoremap <silent><buffer><expr> "
-						\. trigger .
-						\" brace_yourself#match_it(\"".
-						\i[0] . "\",\"".  i[1] . "\")"
-		endif
-		if ((trigger != i[1]) && strlen(i[1]) == 1 )
-			execute "inoremap <silent><buffer><expr> "
-						\. i[1] .
-						\" brace_yourself#move_right(\"".
-						\i[0] . "\",\"".  i[1] . "\")"
-		endif
-	endfor
+function! brace_yourself#delete_all(bracket_pairs)
+    for [l:left, l:right] in a:bracket_pairs
+        if brace_yourself#delete_bracket(left, right)
+            return v:true
+        end
+    endfor
+    call nvim_feedkeys("\<bs>", 'n', v:false)
+    return v:false
 endfunction
