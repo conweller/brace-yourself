@@ -1,12 +1,4 @@
-let g:brace_dot = 1
-function! s:preserve_undo()
-    if g:brace_dot
-        return "\<C-G>U"
-    else
-        return ''
-    return
-endfunction
-
+s:undo_str = "\<C-G>U"
 
 function! brace_yourself#close_bracket(left, right)
     let [_, l:column] =  nvim_win_get_cursor(0)
@@ -15,7 +7,7 @@ function! brace_yourself#close_bracket(left, right)
     let l:line = getline('.')
 
     if l:line[l:next] =~ '[^a-zA-Z0-9\d]' || l:line[l:next] == ''
-        call nvim_feedkeys(a:left.a:right.s:preserve_undo()."\<left>", 'n', v:false)
+        call nvim_feedkeys(a:left.a:right.s:undo_str."\<left>", 'n', v:false)
     else
         call nvim_feedkeys(a:left, 'n', v:false)
     endif
@@ -30,13 +22,13 @@ function! brace_yourself#close_bracket_quote(bracket)
     let l:line = getline('.')
 
     if l:line[l:next] == a:bracket
-        call nvim_feedkeys(s:preserve_undo()."\<right>", "n", v:false)
+        call nvim_feedkeys(s:undo_str."\<right>", "n", v:false)
     else
         if (l:prev == -1 || l:line[l:prev] =~ '[^a-zA-Z0-9\d]')
                     \ &&
                     \ (l:line[l:next] =~ '[^a-zA-Z0-9\d]' || l:line[l:next] == '')
                     \ && l:line[l:prev] != a:bracket
-            call nvim_feedkeys(a:bracket.a:bracket.s:preserve_undo()."\<left>", 'n', v:false)
+            call nvim_feedkeys(a:bracket.a:bracket.s:undo_str."\<left>", 'n', v:false)
         else
             call nvim_feedkeys(a:bracket, "n", v:false)
         endif
@@ -50,7 +42,7 @@ function! brace_yourself#skip_closing(left, right)
     let l:line = getline('.')
 
     if l:line[l:next] == a:right
-        call nvim_feedkeys(s:preserve_undo()."\<right>", "n", v:false)
+        call nvim_feedkeys(s:undo_str."\<right>", "n", v:false)
     else
         call nvim_feedkeys(a:right, 'n', v:false)
     end
@@ -87,9 +79,6 @@ function! brace_yourself#expand(left, right)
     let l:line = getline('.')
 
     if l:line[l:prev] == a:left && l:line[l:next] == a:right
-        " call nvim_feedkeys("\<c-j>\<c-g>k\<c-j>\<c-t>\<c-u>", "n")
-        " call nvim_feedkeys("\<c-j>\<c-g>k\<c-j>", "n")
-        " call nvim_feedkeys("\<c-j>\<Up>\<end>\<c-j>", "n")
         call nvim_feedkeys("\<c-j>\<m-O>", "n", v:false)
         return v:true
     else
