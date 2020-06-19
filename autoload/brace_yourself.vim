@@ -4,28 +4,23 @@ function! s:is_alpha_or_num(char)
     return a:char =~ '[^a-zA-Z0-9\d]' 
 endfunction
 
-function! s:getpos()
-    let l:pos = getcurpos()
-    return [l:pos[1], l:pos[4]-1]
-endfunction
-
 function! brace_yourself#close_bracket(left, right)
-    let [_, l:column] =  s:getpos()
+    let [_, l:column] =  nvim_win_get_cursor(0)
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
 
 
     if s:is_alpha_or_num(l:next_char) || l:next_char == ''
-        call feedkeys(a:left . a:right . s:undo_str . "\<left>", 'n')
+        call nvim_feedkeys(a:left . a:right . s:undo_str . "\<left>", 'n', v:false)
     else
-        call feedkeys(a:left, 'n')
+        call nvim_feedkeys(a:left, 'n', v:false)
     endif
 endfunction
 
 
 function! brace_yourself#close_bracket_quote(bracket)
-    let [_, l:column] =  s:getpos()
+    let [_, l:column] =  nvim_win_get_cursor(0)
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
@@ -33,33 +28,33 @@ function! brace_yourself#close_bracket_quote(bracket)
 
 
     if l:next_char == a:bracket
-        call feedkeys(s:undo_str."\<right>", "n")
+        call nvim_feedkeys(s:undo_str."\<right>", "n", v:false)
     else
         if (l:column-1 == -1 || s:is_alpha_or_num(l:prev_char))
                     \ &&
                     \ (s:is_alpha_or_num(l:next_char) || l:next_char == '')
                     \ && l:prev_char != a:bracket
-            call feedkeys(a:bracket . a:bracket . s:undo_str . "\<left>", 'n')
+            call nvim_feedkeys(a:bracket . a:bracket . s:undo_str . "\<left>", 'n', v:false)
         else
-            call feedkeys(a:bracket, "n")
+            call nvim_feedkeys(a:bracket, "n", v:false)
         endif
     end
 endfunction
 
 function! brace_yourself#skip_closing(left, right)
-    let [_, l:column] =  s:getpos()
+    let [_, l:column] =  nvim_win_get_cursor(0)
     let l:line = getline('.')
     let l:next_char = l:line[l:column]
 
     if l:next_char == a:right
-        call feedkeys(s:undo_str . "\<right>", "n")
+        call nvim_feedkeys(s:undo_str . "\<right>", "n", v:false)
     else
-        call feedkeys(a:right, 'n')
+        call nvim_feedkeys(a:right, 'n', v:false)
     end
 endfunction
 
 function! brace_yourself#delete_bracket(left, right)
-    let [l:row, l:column] =  s:getpos()
+    let [l:row, l:column] =  nvim_win_get_cursor(0)
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
@@ -68,12 +63,12 @@ function! brace_yourself#delete_bracket(left, right)
     let l:next_line = getline(l:row+1)
 
     if l:prev_char == a:left && l:next_char == a:right
-        call feedkeys("\<delete>\<bs>", "n")
+        call nvim_feedkeys("\<delete>\<bs>", "n", v:false)
         return v:true
     elseif l:line =~ '^\s*$' && l:prev_line =~ a:left.'$' && l:next_line =~ '^\s*'.a:right
         let l:new_next_line = l:next_line[match(l:next_line, a:right):]
         call setline(l:row+1, l:new_next_line)
-        call feedkeys("\<c-t>\<c-u>\<down>\<bs>\<bs>", "n")
+        call nvim_feedkeys("\<c-t>\<c-u>\<down>\<bs>\<bs>", "n", v:false)
         return v:true
     else
         return v:false
@@ -82,14 +77,14 @@ endfunction
 
 
 function! brace_yourself#expand(left, right)
-    let [_, l:column] =  s:getpos()
+    let [_, l:column] =  nvim_win_get_cursor(0)
     let l:line = getline('.')
     let l:next_char = l:line[l:column]
     let l:prev_char = l:line[l:column-1]
 
 
     if l:prev_char == a:left && l:next_char == a:right
-        call feedkeys("\<c-j>\<m-O>", "n")
+        call nvim_feedkeys("\<c-j>\<m-O>", "n", v:false)
         return v:true
     else
         return v:false
@@ -102,7 +97,7 @@ function! brace_yourself#expand_all(bracket_pairs)
             return v:true
         end
     endfor
-    call feedkeys("\<c-j>", 'n')
+    call nvim_feedkeys("\<c-j>", 'n', v:false)
     return v:false
 endfunction
 
@@ -112,6 +107,6 @@ function! brace_yourself#delete_all(bracket_pairs)
             return v:true
         end
     endfor
-    call feedkeys("\<bs>", 'n')
+    call nvim_feedkeys("\<bs>", 'n', v:false)
     return v:false
 endfunction
