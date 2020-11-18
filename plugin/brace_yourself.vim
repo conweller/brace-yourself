@@ -19,11 +19,11 @@ for [s:left, s:right] in g:bracket_pairs
     else
         if s:left =~ "'"
             exe 'inoremap <expr> ' . s:left
-                        \ . ' call brace_yourself#close_bracket_quote("'
+                        \ . ' brace_yourself#close_bracket_quote("'
                         \ . s:left . '")'
         else
             exe "inoremap <expr> " . s:left
-                        \ . " call brace_yourself#close_bracket_quote('"
+                        \ . " brace_yourself#close_bracket_quote('"
                         \ . s:left . "')"
         endif
     endif
