@@ -10,26 +10,26 @@ let g:closing_brackets = [ '}', ']', ')', '"', '"']
 
 for [s:left, s:right] in g:bracket_pairs
     if s:left != s:right
-        exe "imap " . s:left
-                    \ . " <cmd>call brace_yourself#close_bracket('"
-                    \ . s:left . "','" . s:right . "')<cr>"
-        exe "imap " . s:right
-                    \ . " <cmd>call brace_yourself#skip_closing('"
-                    \ . s:left . "','" . s:right . "')<cr>"
+        exe "inoremap <expr> " . s:left
+                    \ . " brace_yourself#close_bracket('"
+                    \ . s:left . "','" . s:right . "')"
+        exe "inoremap <expr> " . s:right
+                    \ . " brace_yourself#skip_closing('"
+                    \ . s:left . "','" . s:right . "')"
     else
         if s:left =~ "'"
-            exe 'imap ' . s:left
-                        \ . ' <cmd>call brace_yourself#close_bracket_quote("'
-                        \ . s:left . '")<cr>'
+            exe 'inoremap <expr> ' . s:left
+                        \ . ' call brace_yourself#close_bracket_quote("'
+                        \ . s:left . '")'
         else
-            exe "imap " . s:left
-                        \ . " <cmd>call brace_yourself#close_bracket_quote('"
-                        \ . s:left . "')<cr>"
+            exe "inoremap <expr> " . s:left
+                        \ . " call brace_yourself#close_bracket_quote('"
+                        \ . s:left . "')"
         endif
     endif
 endfor
 
-imap <backspace> <cmd>call brace_yourself#delete_all(g:bracket_pairs)<cr>
-imap <c-h> <cmd>call brace_yourself#delete_all(g:bracket_pairs)<cr>
-imap <cr> <cmd>call brace_yourself#expand_all(g:bracket_pairs)<cr>
-imap <c-j> <cmd>call brace_yourself#expand_all(g:bracket_pairs)<cr>
+inoremap <expr> <backspace> brace_yourself#delete_all(g:bracket_pairs)
+inoremap <expr> <c-h> brace_yourself#delete_all(g:bracket_pairs)
+inoremap <expr> <cr> brace_yourself#expand_all(g:bracket_pairs)
+inoremap <expr> <c-j> brace_yourself#expand_all(g:bracket_pairs)

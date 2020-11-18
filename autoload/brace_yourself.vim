@@ -12,9 +12,11 @@ function! brace_yourself#close_bracket(left, right)
 
 
     if s:is_alpha_or_num(l:next_char) || l:next_char == ''
-        call nvim_feedkeys(a:left . a:right . s:undo_str . "\<left>", 'n', v:false)
+        " call nvim_feedkeys(a:left . a:right . s:undo_str . "\<left>", 'n', v:false)
+        return a:left . a:right . s:undo_str . "\<left>"
     else
-        call nvim_feedkeys(a:left, 'n', v:false)
+        " call nvim_feedkeys(a:left, 'n', v:false)
+        return a:left
     endif
 endfunction
 
@@ -28,15 +30,18 @@ function! brace_yourself#close_bracket_quote(bracket)
 
 
     if l:next_char == a:bracket
-        call nvim_feedkeys(s:undo_str."\<right>", "n", v:false)
+        " call nvim_feedkeys(s:undo_str."\<right>", "n", v:false)
+        return s:undo_str."\<right>"
     else
         if (l:column-1 == -1 || s:is_alpha_or_num(l:prev_char))
                     \ &&
                     \ (s:is_alpha_or_num(l:next_char) || l:next_char == '')
                     \ && l:prev_char != a:bracket
-            call nvim_feedkeys(a:bracket . a:bracket . s:undo_str . "\<left>", 'n', v:false)
+            " call nvim_feedkeys(a:bracket . a:bracket . s:undo_str . "\<left>", 'n', v:false)
+            return a:bracket . a:bracket . s:undo_str . "\<left>"
         else
-            call nvim_feedkeys(a:bracket, "n", v:false)
+            " call nvim_feedkeys(a:bracket, "n", v:false)
+            return a:bracket
         endif
     end
 endfunction
@@ -47,9 +52,11 @@ function! brace_yourself#skip_closing(left, right)
     let l:next_char = l:line[l:column]
 
     if l:next_char == a:right
-        call nvim_feedkeys(s:undo_str . "\<right>", "n", v:false)
+        " call nvim_feedkeys(s:undo_str . "\<right>", "n", v:false)
+        return s:undo_str . "\<right>"
     else
-        call nvim_feedkeys(a:right, 'n', v:false)
+        " call nvim_feedkeys(a:right, 'n', v:false)
+        return a:right
     end
 endfunction
 
@@ -63,15 +70,11 @@ function! brace_yourself#delete_bracket(left, right)
     let l:next_line = getline(l:row+1)
 
     if l:prev_char == a:left && l:next_char == a:right
-        call nvim_feedkeys("\<delete>\<bs>", "n", v:false)
-        return v:true
+        return 1
     elseif l:line =~ '^\s*$' && l:prev_line =~ a:left.'$' && l:next_line =~ '^\s*'.a:right
-        let l:new_next_line = l:next_line[match(l:next_line, a:right):]
-        call setline(l:row+1, l:new_next_line)
-        call nvim_feedkeys("\<c-t>\<c-u>\<down>\<bs>\<bs>", "n", v:false)
-        return v:true
+        return 2
     else
-        return v:false
+        return -1
     end
 endfunction
 
@@ -84,7 +87,8 @@ function! brace_yourself#expand(left, right)
 
 
     if l:prev_char == a:left && l:next_char == a:right
-        call nvim_feedkeys("\<c-j>\<m-O>", "n", v:false)
+        " call nvim_feedkeys("\<c-j>\<m-O>", "n", v:false)
+        " return "\<c-j>\<m-O>"
         return v:true
     else
         return v:false
@@ -94,19 +98,20 @@ endfunction
 function! brace_yourself#expand_all(bracket_pairs)
     for [l:left, l:right] in a:bracket_pairs
         if brace_yourself#expand(left, right)
-            return v:true
+            return "\<c-j>\<m-O>"
         end
     endfor
-    call nvim_feedkeys("\<c-j>", 'n', v:false)
-    return v:false
+    return "\<c-j>"
 endfunction
 
 function! brace_yourself#delete_all(bracket_pairs)
     for [l:left, l:right] in a:bracket_pairs
-        if brace_yourself#delete_bracket(left, right)
-            return v:true
+        let l:case = brace_yourself#delete_bracket(left, right)
+        if l:case == 1
+            return "\<delete>\<bs>"
+        elseif l:case == 2
+            return  "0\<c-d>\<down>0\<c-d>\<bs>\<bs>"
         end
     endfor
-    call nvim_feedkeys("\<bs>", 'n', v:false)
-    return v:false
+    return "\<bs>"
 endfunction
