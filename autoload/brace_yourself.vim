@@ -1,7 +1,7 @@
 let s:undo_str = "\<C-G>U"
 
 function! s:is_alpha_or_num(char)
-    return a:char =~ '[^a-zA-Z0-9\d]' 
+    return !(a:char =~ '\k\|"\|''')
 endfunction
 
 function! brace_yourself#close_bracket(left, right)
