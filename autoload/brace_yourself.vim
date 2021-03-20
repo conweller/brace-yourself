@@ -9,9 +9,12 @@ function! brace_yourself#close_bracket(left, right)
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
+    let l:prev_char = l:line[l:column-1]
 
 
-    if s:is_alpha_or_num(l:next_char) || l:next_char == ''
+    if l:prev_char == "\\"
+        return a:left . "\\" . a:right . s:undo_str . "\<left>" . s:undo_str . "\<left>"
+    elseif s:is_alpha_or_num(l:next_char) || l:next_char == ''
         return a:left . a:right . s:undo_str . "\<left>"
     else
         return a:left
@@ -25,10 +28,15 @@ function! brace_yourself#close_bracket_quote(bracket)
 
     let l:next_char = l:line[l:column]
     let l:prev_char = l:line[l:column-1]
+    let l:pprev_char = l:line[l:column-2]
 
 
     if l:next_char == a:bracket
         return s:undo_str."\<right>"
+    elseif l:pprev_char == a:bracket && l:prev_char == a:bracket
+        return a:bracket . a:bracket  . a:bracket  . a:bracket . s:undo_str . "\<left>" . s:undo_str . "\<left>" . s:undo_str . "\<left>"
+    elseif l:prev_char == "\\"
+        return a:bracket . "\\" . a:bracket . s:undo_str . "\<left>" . s:undo_str . "\<left>"
     else
         if (l:column-1 == -1 || s:is_alpha_or_num(l:prev_char))
                     \ &&
@@ -59,12 +67,18 @@ function! brace_yourself#delete_bracket(left, right)
 
     let l:next_char = l:line[l:column]
     let l:prev_char = l:line[l:column-1]
+    let l:nnext_char = l:line[l:column+1]
+    let l:pprev_char = l:line[l:column-2]
     let l:prev_line = getline(l:row-1)
     let l:next_line = getline(l:row+1)
 
     if l:prev_char == a:left && l:next_char == a:right
         return 1
+    elseif l:pprev_char == "\\" && l:prev_char == a:left && l:next_char == "\\" && l:nnext_char == a:right
+        return 3
     elseif l:line =~ '^\s*$' && l:prev_line =~ escape(a:left, '*.$^').'$' && l:next_line =~ '^\s*'.escape(a:right, '*.$^')
+        return 2
+    elseif l:line =~ '^\s*$' && l:prev_line =~ escape("\\\\" . a:left, '*..$^').'$' && l:next_line =~ '^\s*'.escape("\\\\" . a:right, '*..$^')
         return 2
     else
         return -1
@@ -77,9 +91,13 @@ function! brace_yourself#expand(left, right)
     let l:line = getline('.')
     let l:next_char = l:line[l:column]
     let l:prev_char = l:line[l:column-1]
+    let l:nnext_char = l:line[l:column+1]
+    let l:pprev_char = l:line[l:column-2]
 
 
     if l:prev_char == a:left && l:next_char == a:right
+        return v:true
+    elseif l:pprev_char == "\\" && l:prev_char == a:left && l:next_char == "\\" && l:nnext_char == a:right
         return v:true
     else
         return v:false
@@ -102,6 +120,8 @@ function! brace_yourself#delete_all(bracket_pairs)
             return "\<delete>\<bs>"
         elseif l:case == 2
             return  "0\<c-d>\<down>0\<c-d>\<bs>\<bs>"
+        elseif l:case == 3
+            return  "\<delete>\<delete>\<bs>\<bs>"
         end
     endfor
     return "\<bs>"
