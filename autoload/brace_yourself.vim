@@ -26,7 +26,6 @@ endfunction
 function! brace_yourself#close_bracket_quote(bracket)
     let [_, _, l:column, _] =  getpos('.')
     let l:column -= 1
-    let l:column -= 1
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
