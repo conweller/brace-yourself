@@ -5,7 +5,8 @@ function! s:is_alpha_or_num(char)
 endfunction
 
 function! brace_yourself#close_bracket(left, right)
-    let [_, l:column] =  nvim_win_get_cursor(0)
+    let [_, _, l:column, _] =  getpos('.')
+    let l:column -= 1
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
@@ -23,7 +24,9 @@ endfunction
 
 
 function! brace_yourself#close_bracket_quote(bracket)
-    let [_, l:column] =  nvim_win_get_cursor(0)
+    let [_, _, l:column, _] =  getpos('.')
+    let l:column -= 1
+    let l:column -= 1
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
@@ -50,7 +53,8 @@ function! brace_yourself#close_bracket_quote(bracket)
 endfunction
 
 function! brace_yourself#skip_closing(left, right)
-    let [_, l:column] =  nvim_win_get_cursor(0)
+    let [_, _, l:column, _] =  getpos('.')
+    let l:column -= 1
     let l:line = getline('.')
     let l:next_char = l:line[l:column]
 
@@ -62,7 +66,8 @@ function! brace_yourself#skip_closing(left, right)
 endfunction
 
 function! brace_yourself#delete_bracket(left, right)
-    let [l:row, l:column] =  nvim_win_get_cursor(0)
+    let [_, l:row, l:column, _] =  getpos('.')
+    let l:column -= 1
     let l:line = getline('.')
 
     let l:next_char = l:line[l:column]
@@ -87,7 +92,8 @@ endfunction
 
 
 function! brace_yourself#expand(left, right)
-    let [_, l:column] =  nvim_win_get_cursor(0)
+    let [_, _, l:column, _] =  getpos('.')
+    let l:column -= 1
     let l:line = getline('.')
     let l:next_char = l:line[l:column]
     let l:prev_char = l:line[l:column-1]
