@@ -1,6 +1,6 @@
 let s:undo_str = "\<C-G>U"
 
-function! s:is_alpha_or_num(char)
+function! s:isnt_alpha_or_num(char)
     return !(a:char =~ '\k\|"\|''')
 endfunction
 
@@ -13,10 +13,12 @@ function! brace_yourself#close_bracket(left, right)
     let l:prev_char = l:line[l:column-1]
 
 
-    if l:prev_char == "\\"
-        return a:left . "\\" . a:right . s:undo_str . "\<left>" . s:undo_str . "\<left>"
-    elseif s:is_alpha_or_num(l:next_char) || l:next_char == ''
-        return a:left . a:right . s:undo_str . "\<left>"
+    if s:isnt_alpha_or_num(l:next_char) || l:next_char == ''
+        if l:prev_char == "\\"
+            return a:left . "\\" . a:right . s:undo_str . "\<left>" . s:undo_str . "\<left>"
+        else
+            return a:left . a:right . s:undo_str . "\<left>"
+        endif
     else
         return a:left
     endif
@@ -37,14 +39,20 @@ function! brace_yourself#close_bracket_quote(bracket)
         return s:undo_str."\<right>"
     elseif l:pprev_char == a:bracket && l:prev_char == a:bracket
         return a:bracket . a:bracket  . a:bracket  . a:bracket . s:undo_str . "\<left>" . s:undo_str . "\<left>" . s:undo_str . "\<left>"
-    elseif l:prev_char == "\\"
-        return a:bracket . "\\" . a:bracket . s:undo_str . "\<left>" . s:undo_str . "\<left>"
     else
-        if (l:column-1 == -1 || s:is_alpha_or_num(l:prev_char))
+        if (l:column-1 == -1 || s:isnt_alpha_or_num(l:prev_char))
                     \ &&
-                    \ (s:is_alpha_or_num(l:next_char) || l:next_char == '')
+                    \ (s:isnt_alpha_or_num(l:next_char) || l:next_char == '')
                     \ && l:prev_char != a:bracket
-            return a:bracket . a:bracket . s:undo_str . "\<left>"
+            if l:prev_char == "\\"
+                if ((l:column-1 == -1 || s:isnt_alpha_or_num(l:pprev_char)))
+                    return a:bracket . "\\" . a:bracket . s:undo_str . "\<left>" . s:undo_str . "\<left>"
+                else
+                    return a:bracket
+                endif
+            else
+                return a:bracket . a:bracket . s:undo_str . "\<left>"
+            endif
         else
             return a:bracket
         endif

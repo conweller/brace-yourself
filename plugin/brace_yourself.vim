@@ -13,8 +13,13 @@ let g:bracket_pairs = [
 
 function! s:setmaps()
     if index(g:brace_yourself_ft_ignore, &ft) > 0
+        let b:brace_yourself_loaded = 1
         return
     end
+    if exists('b:brace_yourself_loaded')
+        return
+    endif
+
     if !exists('b:bracket_pairs')
         let b:bracket_pairs = g:bracket_pairs
     end
@@ -38,6 +43,7 @@ function! s:setmaps()
                             \ . s:left . "')"
             endif
         endif
+        let b:brace_yourself_loaded = 1
     endfor
 
     inoremap <buffer> <expr> <backspace> brace_yourself#delete_all(b:bracket_pairs)
