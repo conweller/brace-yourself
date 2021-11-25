@@ -1,28 +1,26 @@
-if !exists('g:brace_yourself_ft_ignore')
-    let g:brace_yourself_ft_ignore = []
+if !exists('g:brace_yourself_default')
+    let g:brace_yourself_default = [
+                \['{', '}'],
+                \['[', ']'],
+                \['(', ')'],
+                \['"', '"'],
+                \['`', '`'],
+                \["'", "'"],
+                \]
+end
+if !exists('g:brace_yourself_filetypes')
+    let g:brace_yourself_filetypes = {}
 end
 
-let g:bracket_pairs = [
-            \['{', '}'],
-            \['[', ']'],
-            \['(', ')'],
-            \['"', '"'],
-            \['`', '`'],
-            \["'", "'"],
-            \]
 
 function! s:setmaps()
-    if index(g:brace_yourself_ft_ignore, &ft) > 0
-        let b:brace_yourself_loaded = 1
-        return
-    end
     if exists('b:brace_yourself_loaded')
         return
     endif
-
-    if !exists('b:bracket_pairs')
-        let b:bracket_pairs = g:bracket_pairs
-    end
+    let b:bracket_pairs = g:brace_yourself_default
+    if has_key(g:brace_yourself_filetypes, &ft)
+        let b:bracket_pairs = g:brace_yourself_filetypes[&ft]
+    endif
 
     for [s:left, s:right] in b:bracket_pairs
         if s:left != s:right
@@ -46,10 +44,12 @@ function! s:setmaps()
         let b:brace_yourself_loaded = 1
     endfor
 
-    inoremap <buffer> <expr> <backspace> brace_yourself#delete_all(b:bracket_pairs)
-    inoremap <buffer> <expr> <c-h> brace_yourself#delete_all(b:bracket_pairs)
-    inoremap <buffer> <expr> <cr> brace_yourself#expand_all(b:bracket_pairs)
-    inoremap <buffer> <expr> <c-j> brace_yourself#expand_all(b:bracket_pairs)
+    if len(b:bracket_pairs) > 0
+        inoremap <buffer> <expr> <backspace> brace_yourself#delete_all(b:bracket_pairs)
+        inoremap <buffer> <expr> <c-h> brace_yourself#delete_all(b:bracket_pairs)
+        inoremap <buffer> <expr> <cr> brace_yourself#expand_all(filter(copy(b:bracket_pairs), 'v:val[0] != v:val[1]'))
+        inoremap <buffer> <expr> <c-j> brace_yourself#expand_all(filter(copy(b:bracket_pairs), 'v:val[0] != v:val[1]'))
+    end
 endfunction
 
-autocmd BufEnter * call s:setmaps()
+autocmd Filetype * call s:setmaps()
